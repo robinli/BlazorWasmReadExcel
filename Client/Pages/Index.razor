@@ -1,0 +1,60 @@
+﻿@page "/"
+@using System.IO
+@using OfficeOpenXml;
+
+<h1>Read Excel by EPPlus</h1>
+
+<InputFile OnChange="@LoadFiles" />
+
+<div>@((MarkupString)htmlGrid)</div>
+
+@code {
+    private string htmlGrid = "<P>Choose Excel File</p>";
+    private int numOfcolumns = 2;
+
+
+    private async Task LoadFiles(InputFileChangeEventArgs e)
+    {
+        foreach (var file in e.GetMultipleFiles())
+        {
+            using (MemoryStream stream = new MemoryStream())
+            {
+                await file.OpenReadStream().CopyToAsync(stream);
+                ExcelPackage excelPackage = new ExcelPackage(stream);
+                ExcelWorksheet sheet = excelPackage.Workbook.Worksheets[0];
+
+                ExcelToGrid(sheet);
+            }
+        }
+    }
+
+
+    private void ExcelToGrid(ExcelWorksheet sheet)
+    {
+        htmlGrid = "<table class='table table-striped'>";
+        /*輸出表題*/
+        htmlGrid += "<tr>";
+        int rowHead = 1;
+        for (int col = 1; col <= numOfcolumns; col++)
+        {
+            object cellValue = sheet.Cells[rowHead, col].Value;
+            htmlGrid += $"<th>{cellValue}</th>";
+        }
+        htmlGrid += "</tr>";
+
+        /*輸出資料*/
+        for (int row = sheet.Dimension.Start.Row + 1; row <= sheet.Dimension.End.Row; row++)
+        {
+            htmlGrid += "<tr>";
+            for (int col = 1; col <= numOfcolumns; col++)
+            {
+                object cellValue = sheet.Cells[row, col].Value;
+                htmlGrid += $"<td>{cellValue}</td>";
+            }
+            htmlGrid += "</tr>";
+        }
+        htmlGrid += "</table>";
+    }
+
+
+}
